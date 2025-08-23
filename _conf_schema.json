@@ -1,0 +1,35 @@
+{
+    "gemini_api_keys": {
+        "description": "Gemini API 密钥列表 (从 Google AI Studio 获取)",
+        "type": "list",
+        "hint": "前往 https://aistudio.google.com/ 生成 API Key，支持填写多个密钥以提高可用性",
+        "obvious_hint": true,
+        "items": {
+            "type": "string",
+            "description": "API 密钥"
+        },
+        "default": []
+    },
+    "api_base_url": {
+        "description": "Gemini API 基础 URL (可选)",
+        "type": "string",
+        "hint": "如果需要自定义 API 地址或使用代理，请填写完整 URL",
+        "default": "https://generativelanguage.googleapis.com"
+    },
+    "figurine_style": {
+        "description": "手办化风格",
+        "type": "string",
+        "options": [
+            "deluxe_box",
+            "classic"
+        ],
+        "hint": "选择生成的图片风格：'deluxe_box' (带包装盒的豪华版) 或 'classic' (经典版)",
+        "default": "deluxe_box"
+    },
+    "save_image": {
+        "description": "是否保存生成的图片",
+        "type": "bool",
+        "hint": "开启后，生成的图片会保存在插件的 data 目录中",
+        "default": true
+    }
+}
