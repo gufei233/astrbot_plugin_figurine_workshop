@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import io
 import random
@@ -9,7 +10,7 @@ import aiohttp
 from PIL import Image as PILImage
 
 import astrbot.core.message.components as Comp
-from astrbot import logger
+from astrbot.api import logger
 from astrbot.api.event import filter
 from astrbot.api.star import Context, Star, StarTools, register
 from astrbot.core import AstrBotConfig
@@ -18,14 +19,13 @@ from astrbot.core.platform.astr_message_event import AstrMessageEvent
 
 
 class ImageWorkflow:
-    def __init__(self, base_url: str):
+    def __init__(self):
         self.session = aiohttp.ClientSession()
 
-    async def _download_image(self, url: str, http: bool = True) -> bytes | None:
-        if http:
-            url = url.replace("https://", "http://")
+    async def _download_image(self, url: str) -> bytes | None:
         try:
             async with self.session.get(url) as resp:
+                resp.raise_for_status()
                 return await resp.read()
         except Exception as e:
             logger.error(f"图片下载失败: {e}")
@@ -43,7 +43,10 @@ class ImageWorkflow:
             logger.error(f"下载头像失败: {e}")
             return None
 
-    def _extract_first_frame(self, raw: bytes) -> bytes:
+    def _extract_first_frame_sync(self, raw: bytes) -> bytes:
+        """
+        使用PIL库处理图片数据。如果是GIF，则提取第一帧并转为PNG。
+        """
         img_io = io.BytesIO(raw)
         img = PILImage.open(img_io)
         if img.format != "GIF":
@@ -56,15 +59,18 @@ class ImageWorkflow:
 
     async def _load_bytes(self, src: str) -> bytes | None:
         raw: bytes | None = None
+        loop = asyncio.get_running_loop()
+
         if Path(src).is_file():
-            raw = Path(src).read_bytes()
+            raw = await loop.run_in_executor(None, Path(src).read_bytes)
         elif src.startswith("http"):
             raw = await self._download_image(src)
         elif src.startswith("base64://"):
-            return base64.b64decode(src[9:])
+            raw = await loop.run_in_executor(None, base64.b64decode, src[9:])
+
         if not raw:
             return None
-        return self._extract_first_frame(raw)
+        return await loop.run_in_executor(None, self._extract_first_frame_sync, raw)
 
     async def get_first_image(self, event: AstrMessageEvent) -> bytes | None:
         for s in event.message_obj.message:
@@ -115,7 +121,7 @@ class LMArenaPlugin(Star):
             logger.error("LMArenaPlugin: 未配置任何 Gemini API 密钥")
 
     async def initialize(self):
-        self.iwf = ImageWorkflow(base_url="")
+        self.iwf = ImageWorkflow()
 
     @filter.regex(r"^(手办化)", priority=3)
     async def on_nano(self, event: AstrMessageEvent):
@@ -139,8 +145,14 @@ class LMArenaPlugin(Star):
                     self.plugin_data_dir
                     / f"gemini_{self.figurine_style}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}.png"
                 )
-                with save_path.open("wb") as f:
-                    f.write(res)
+
+                def write_file():
+                    with save_path.open("wb") as f:
+                        f.write(res)
+
+                loop = asyncio.get_running_loop()
+                await loop.run_in_executor(None, write_file)
+
         elif isinstance(res, str):
             yield event.plain_result(f"生成失败: {res}")
         else:
@@ -149,27 +161,15 @@ class LMArenaPlugin(Star):
     async def _generate_figurine_with_gemini(
         self, image_bytes: bytes, user_prompt: str
     ) -> bytes | str | None:
-        # classic 风格
-        if self.figurine_style == "classic":
-            base_prompt = (
-                "Your task is to create a photorealistic, masterpiece-quality image of a 1/7 scale commercialized figurine based on the user's character. The final image must be in a realistic style and environment.\n\n"
-                "**Crucial Instruction on Face & Likeness:** The figurine's face is the most critical element. It must be a perfect, high-fidelity 3D translation of the character from the source image. The sculpt must be sharp, clean, and intricately detailed, accurately capturing the original artwork's facial structure, eye style, expression, and hair. The final result must be immediately recognizable as the same character, elevated to a premium physical product standard. Do NOT generate a generic or abstract face.\n\n"
-                "**Scene Composition (Strictly follow these details):**\n"
-                "1. **Figurine & Base:** Place the figure on a computer desk. It must stand on a simple, circular, transparent acrylic base WITHOUT any text or markings.\n"
-                "2. **Computer Monitor:** In the background, a computer monitor must display 3D modeling software (like ZBrush or Blender) with the digital sculpt of the very same figurine visible on the screen.\n"
-                "3. **Artwork Display:** Next to the computer screen, include a transparent acrylic board with a wooden base. This board holds a print of the original 2D artwork that the figurine is based on.\n"
-                "4. **Environment:** The overall setting is a desk, with elements like a keyboard to enhance realism. The lighting should be natural and well-lit, as if in a room."
+        prompts_config = self.conf.get("prompts", {})
+        base_prompt = prompts_config.get(self.figurine_style)
+
+        if not base_prompt:
+            error_msg = (
+                f"配置错误：未能在配置文件中找到名为 '{self.figurine_style}' 的提示词。"
             )
-        else:  # deluxe_box 风格
-            base_prompt = (
-                "Your primary mission is to accurately convert the subject from the user's photo into a photorealistic, masterpiece quality, 1/7 scale PVC figurine, presented in its commercial packaging.\n\n"
-                "**Crucial First Step: Analyze the image to identify the subject's key attributes (e.g., human male, human female, animal, specific creature) and defining features (hair style, clothing, expression). The generated figurine must strictly adhere to these identified attributes.** This is a mandatory instruction to avoid generating a generic female figure.\n\n"
-                "**Top Priority - Character Likeness:** The figurine's face MUST maintain a strong likeness to the original character. Your task is to translate the 2D facial features into a 3D sculpt, preserving the identity, expression, and core characteristics. If the source is blurry, interpret the features to create a sharp, well-defined version that is clearly recognizable as the same character.\n\n"
-                "**Scene Details:**\n"
-                "1. **Figurine:** The figure version of the photo I gave you, with a clear representation of PVC material, placed on a round plastic base.\n"
-                "2. **Packaging:** Behind the figure, there should be a partially transparent plastic and paper box, with the character from the photo printed on it.\n"
-                "3. **Environment:** The entire scene should be in an indoor setting with good lighting."
-            )
+            logger.error(error_msg)
+            return error_msg
 
         final_prompt = (
             f"{base_prompt}\n\nAdditional user requirements from user: {user_prompt}"
@@ -181,28 +181,23 @@ class LMArenaPlugin(Star):
         async def edit_operation(api_key):
             model_name = "gemini-2.0-flash-preview-image-generation"
             image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
             payload = {
                 "contents": [
-                    {"role": "user", "parts": [{"text": final_prompt}]},
                     {
                         "role": "user",
                         "parts": [
+                            {"text": final_prompt},
                             {
                                 "inlineData": {
                                     "mimeType": "image/png",
                                     "data": image_base64,
                                 }
-                            }
+                            },
                         ],
-                    },
+                    }
                 ],
-                "generationConfig": {
-                    "responseModalities": ["TEXT", "IMAGE"],
-                    "temperature": 0.8,
-                    "topP": 0.95,
-                    "topK": 40,
-                    "maxOutputTokens": 1024,
-                },
+                "generationConfig": {"responseModalities": ["TEXT", "IMAGE"]},
             }
             return await self._send_image_request(model_name, payload, api_key)
 
