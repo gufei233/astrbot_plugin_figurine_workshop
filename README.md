@@ -1,0 +1,2 @@
+# astrbot_plugin_figurine_workshop
+基于gemini画图的手办化,astrbot项目插件
