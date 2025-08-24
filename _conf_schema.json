@@ -13,17 +13,17 @@
     "api_base_url": {
         "description": "Gemini API 基础 URL (可选)",
         "type": "string",
-        "hint": "如果需要自定义 API 地址，请填写完整 URL",
+        "hint": "如果需要自定义 API 地址或使用代理，请填写完整 URL",
         "default": "https://generativelanguage.googleapis.com"
     },
     "figurine_style": {
-        "description": "手办化风格",
+        "description": "模型化风格",
         "type": "string",
         "options": [
             "deluxe_box",
             "classic"
         ],
-        "hint": "选择生成的图片风格：'deluxe_box' (包装盒版) 或 'classic' (经典版)",
+        "hint": "选择生成的图片风格：'deluxe_box' (包装盒版) 或 'classic' (经典版/工作室版)",
         "default": "deluxe_box"
     },
     "save_image": {
@@ -35,21 +35,21 @@
     "prompts": {
         "description": "自定义不同风格的生成提示词",
         "type": "object",
-        "hint": "在这里你可以修改或微调用于生成不同风格图片的指令",
+        "hint": "这里的提示词已包含智能识别逻辑，能自动适应不同类型的主体。",
         "items": {
             "deluxe_box": {
-                "description": "包装盒版风格提示词",
+                "description": "包装盒版风格提示词 (高清自适应版)",
                 "type": "text",
                 "editor_mode": true,
                 "editor_language": "markdown",
-                "default": "Your primary mission is to accurately convert the subject from the user's photo into a photorealistic, masterpiece quality, 1/7 scale PVC figurine, presented in its commercial packaging.\n\n**Crucial First Step: Analyze the image to identify the subject's key attributes (e.g., human male, human female, animal, specific creature) and defining features (hair style, clothing, expression). The generated figurine must strictly adhere to these identified attributes.** This is a mandatory instruction to avoid generating a generic female figure.\n\n**Top Priority - Character Likeness:** The figurine's face MUST maintain a strong likeness to the original character. Your task is to translate the 2D facial features into a 3D sculpt, preserving the identity, expression, and core characteristics. If the source is blurry, interpret the features to create a sharp, well-defined version that is clearly recognizable as the same character.\n\n**Scene Details:**\n1. **Figurine:** The figure version of the photo I gave you, with a clear representation of PVC material, placed on a round plastic base.\n2. **Packaging:** Behind the figure, there should be a partially transparent plastic and paper box, with the character from the photo printed on it.\n3. **Environment:** The entire scene should be in an indoor setting with good lighting."
+                "default": "Your primary mission is to convert the subject from the user's photo into a **photorealistic, ultra-high-resolution miniature figure**, presented in its commercial packaging.  \nThe result must be **sharp, crystal-clear, and professional product photography quality**, with **no blurriness or distortion**.\n\n**Core Directive: Subject Analysis & Priority Assignment (CRITICAL FIRST STEP)**  \n1. Identify the subject of the image.  \n2. Apply the correct rule set:  \n\n* **RULE SET A - Person, creature, or animal:**  \n   - **If a face is visible:** Your top priority is **Likeness**. Render the face in sharp detail, with accurate proportions.  \n   - **If NO face is visible (e.g., back view):** Your top priority is **Pose and Form Fidelity**. **Do NOT invent or add a face** — faithfully preserve the back-view pose from the source photo.  \n\n* **RULE SET B - Vehicle:** Prioritize exact **Form, Proportions, Surface Finish, and Key Details**.  \n\n* **RULE SET C - Building/structure:** Prioritize **Architectural Integrity** (geometry, materials, fine details).  \n\n**Scene Details:**  \n1. **The Model:** The miniature figure must be **highly detailed, sharp, and exactly match the pose from the input photo**.  \n2. **The Base:** A clean, simple display base.  \n3. **The Packaging:** Behind the model, show a collector’s style box featuring the subject.  \n4. **Environment:** A professional, well-lit indoor studio setting, **sharp focus, no blur, no noise**."
             },
             "classic": {
-                "description": "经典版风格提示词",
+                "description": "经典版/工作室风格提示词 (高清自适应版)",
                 "type": "text",
                 "editor_mode": true,
                 "editor_language": "markdown",
-                "default": "Your primary mission is to accurately convert the subject from the user's photo into a photorealistic, masterpiece-quality, 1/7 scale PVC figurine, presented in a realistic desk environment.\n\n**Crucial First Step: Analyze the image to identify the subject's key attributes (e.g., human male, human female, animal, specific creature) and defining features (hair style, clothing, expression). The generated figurine must strictly adhere to these identified attributes.** This is a mandatory instruction to avoid generating a generic female figure.\n\n**Top Priority - Flawless Face & Likeness:** The figurine's face is the most critical element and must be a perfect, high-fidelity 3D translation of the character from the source image. The sculpt must be sharp, clean, and intricately detailed. **If the source image is blurry or lacks detail, you must interpret the features to create a sharp, well-defined, and photorealistic version that is immediately and unmistakably recognizable as the same character.** Do NOT generate a generic or abstract face.\n\n**Scene Composition (Strictly follow these details):**\n1.  **Figurine & Base:** Place the highly detailed figurine at the center of the image on a computer desk. It must stand on a simple, circular, transparent acrylic base WITHOUT any text or markings. The figurine itself is the main focus of the image.\n2.  **Background Elements:** In the background, and slightly out of focus to emphasize the main subject, include a computer monitor displaying 3D modeling software (like ZBrush or Blender) with the digital sculpt of the very same figurine visible on the screen.\n3.  **Artwork Display:** Next to the computer screen, include a transparent acrylic board with a wooden base. This board holds a print of the original 2D artwork that the figurine is based on.\n4.  **Environment:** The overall setting is a desk, with elements like a keyboard to enhance realism. The lighting should be natural and well-lit, specifically designed to highlight the intricate details of the figurine's face and sculpt."
+                "default": "Your primary mission is to convert the subject from the user's photo into a **photorealistic, ultra-high-resolution miniature model**, displayed in a realistic studio/workshop setting.  \nThe result must be **pin-sharp, crystal clear, and professional-grade**, with **no blur, no distortion, and no random changes in pose**.\n\n**Core Directive: Subject Analysis & Priority Assignment (CRITICAL FIRST STEP)**  \n1. Identify the subject of the image.  \n2. Apply the correct rule set:  \n\n* **RULE SET A - Person, creature, or animal:**  \n   - **If a face is visible:** Prioritize **Character Fidelity and Sharp Likeness**.  \n   - **If NO face is visible (e.g., back view):** Prioritize **Pose and Form Fidelity**.  \n     ⚠️ **Do NOT invent or fabricate a face**. Preserve the exact pose of the subject in the input photo.  \n\n* **RULE SET B - Vehicle:** Ensure perfect **Form, Proportions, Surface Finish, and Key Details** with **ultra-sharp clarity**.  \n\n* **RULE SET C - Building/structure:** Ensure **Architectural Integrity** with clear **geometry, materials, and fine details**, all rendered in **sharp focus**.  \n\n**Scene Composition (Strictly follow these details):**  \n1. **The Model:** The miniature model on a desk or workshop table, rendered in **ultra-sharp detail**, faithfully matching the input subject’s **pose and proportions**.  \n2. **Computer Monitor:** In the background, a monitor displays relevant 3D modeling software (ZBrush, Blender, CAD), showing the same subject. The screen must be **readable, crisp, not blurry**.  \n3. **Reference Material:** Next to the monitor, include a clear reference:  \n   - Artwork print for a character,  \n   - Blueprint/concept drawing for a vehicle,  \n   - Architectural drawing for a building.  \n   All references must appear **clear, sharp, and noise-free**.  \n4. **Environment:** A realistic, well-lit studio or office desk, with details like tools or keyboards, rendered in **professional product photography clarity**."
             }
         }
     }
