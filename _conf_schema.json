@@ -16,7 +16,8 @@
         "hint": "选择要使用的模型，默认使用图像生成模型",
         "options": [
             "gemini-2.0-flash-preview-image-generation",
-            "nano-banana"
+            "nano-banana",
+            "nano-banana-hd"
         ],
         "default": "gemini-2.0-flash-preview-image-generation"
     },
@@ -64,6 +65,7 @@
         }
     }
 }
+
 
 
 
