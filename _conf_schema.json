@@ -13,11 +13,10 @@
     "model_name": {
         "description": "Gemini 模型名称",
         "type": "string",
-        "hint": "选择要使用的 Gemini 模型，默认使用图像生成模型",
+        "hint": "选择要使用的模型，默认使用图像生成模型",
         "options": [
             "gemini-2.0-flash-preview-image-generation",
-            "gemini-2.0-flash-exp",
-            "gemini-exp-1206"
+            "nano-banana"
         ],
         "default": "gemini-2.0-flash-preview-image-generation"
     },
@@ -65,5 +64,6 @@
         }
     }
 }
+
 
 
