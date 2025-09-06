@@ -101,7 +101,7 @@ class ImageWorkflow:
     "astrbot_plugin_figurine_workshop",
     "长安某",
     "使用 Gemini API 将图片手办化",
-    "1.0.0",
+    "1.0.2",
 )
 class LMArenaPlugin(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
@@ -117,6 +117,10 @@ class LMArenaPlugin(Star):
             "api_base_url", "https://generativelanguage.googleapis.com"
         )
         self.figurine_style = self.conf.get("figurine_style", "deluxe_box")
+        # 添加模型名称配置
+        self.model_name = self.conf.get(
+            "model_name", "gemini-2.0-flash-preview-image-generation"
+        )
         if not self.api_keys:
             logger.error("LMArenaPlugin: 未配置任何 Gemini API 密钥")
 
@@ -134,7 +138,7 @@ class LMArenaPlugin(Star):
             r"^(手办化)\s*", "", event.message_obj.message_str, count=1
         ).strip()
         yield event.plain_result(
-            f"正在生成 [{self.figurine_style}] 风格手办，请稍等..."
+            f"正在使用 {self.model_name} 生成 [{self.figurine_style}] 风格手办，请稍等..."
         )
         res = await self._generate_figurine_with_gemini(img_bytes, user_prompt)
 
@@ -179,7 +183,9 @@ class LMArenaPlugin(Star):
         logger.info(f"Gemini 手办化 Prompt ({self.figurine_style}): {final_prompt}")
 
         async def edit_operation(api_key):
-            model_name = "gemini-2.0-flash-preview-image-generation"
+            # 使用配置的模型名称，而不是硬编码
+            model_name = self.model_name
+            logger.info(f"使用模型: {model_name}")
             image_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
             payload = {
